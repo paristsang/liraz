@@ -1,0 +1,19 @@
+[
+  "fr_gsi",
+  "fr_TWI",
+  "fr_SPI",
+  "fr_slop",
+  "fr_asp",
+  "fr_river",
+  "fr_road",
+  "fr_prof",
+  "fr_plan",
+  "fr_land",
+  "fr_gew",
+  "fr_elev",
+  "fr_dip",
+  "fr_clay",
+  "fr_pi",
+  "fr_tect",
+  "rain_topo"
+]
