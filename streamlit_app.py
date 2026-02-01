@@ -51,6 +51,187 @@ SUSC_CLASSES = [
     {"name": "Very high susceptibility","lo": 0.80393,  "hi": 1.0,     "color": "#e74c3c"},
 ]
 
+# ------------------- FR -> ORIGINAL CLASS MAPPING (FOR PDF TABLE) -------------------
+# Each entry: (class_label, FR_value)
+FEATURE_FR_CLASSES: Dict[str, List[Tuple[str, float]]] = {
+    # Hydrology (your "Hydrology" table) -> likely fr_river
+    "fr_river": [
+        ("< 100", 0.2842),
+        ("100–200", 0.2796),
+        ("200–300", 0.2430),
+        ("300–400", 0.1235),
+        ("NoData (9999)", 0.0697),
+    ],
+
+    # Tectonic -> fr_tect
+    "fr_tect": [
+        ("< 250", 0.2333),
+        ("250–500", 0.2012),
+        ("> 750", 0.1991),
+        ("> 1000", 0.2050),
+        ("NoData (9999)", 0.1614),
+    ],
+
+    # Plan curvature -> fr_plan
+    "fr_plan": [
+        ("< -0.2", 0.4631),
+        ("-0.2 to 0.2 (±0.2)", 0.2332),
+        ("> 0.2", 0.3037),
+    ],
+
+    # Profile curvature -> fr_prof
+    "fr_prof": [
+        ("< -0.15", 0.3264),
+        ("-0.15 to 0.15 (≈0)", 0.2535),
+        ("> 0.15", 0.4201),
+    ],
+
+    # Aspect -> fr_asp
+    "fr_asp": [
+        ("North (0–22.5, 337.5–360) = 1", 0.1601),
+        ("Northeast (22.5–67.5) = 2", 0.1520),
+        ("East (67.5–112.5) = 3", 0.1316),
+        ("Southeast (112.5–157.5) = 4", 0.1129),
+        ("South (157.5–202.5) = 5", 0.1016),
+        ("Southwest (202.5–247.5) = 6", 0.0796),
+        ("West (247.5–292.5) = 7", 0.1058),
+        ("Northwest (292.5–337.5) = 8", 0.1564),
+        ("Flat / No aspect = 9", 0.0000),
+    ],
+
+    # Slope -> fr_slop
+    "fr_slop": [
+        ("0–5° = 1", 0.0147),
+        ("5–15° = 2", 0.1016),
+        ("15–25° = 3", 0.1303),
+        ("25–35° = 4", 0.0538),
+        ("35–45° = 5", 0.0769),
+        ("> 45° = 6", 0.6226),
+    ],
+
+    # Elevation -> fr_elev
+    "fr_elev": [
+        ("0–350", 0.2519),
+        ("350–700", 0.4138),
+        ("700–1050", 0.2286),
+        ("1050–1400", 0.1057),
+    ],
+
+    # SPI -> fr_SPI
+    "fr_SPI": [
+        ("< 2", 0.1624),
+        ("2–4", 0.2529),
+        ("4–6", 0.2959),
+        ("> 6", 0.2888),
+    ],
+
+    # TWI -> fr_TWI
+    "fr_TWI": [
+        ("< 4", 0.2129),
+        ("4–6", 0.2122),
+        ("6–8", 0.2345),
+        ("8–10", 0.1634),
+        ("> 10", 0.1771),
+    ],
+
+    # Land use -> fr_land
+    "fr_land": [
+        ("Artificial surfaces (class 1)", 0.0942),
+        ("Agricultural areas (class 2)", 0.4777),
+        ("Forest & semi-natural (class 3)", 0.2339),
+        ("Wetlands (class 4)", 0.0000),
+        ("Water bodies (class 5)", 0.1942),
+    ],
+
+    # Lithology -> fr_gew
+    "fr_gew": [
+        ("Quaternary formations", 0.0054),
+        ("Nicosia Formation", 0.0103),
+        ("Evaporites", 0.0058),
+        ("Pachna Formation", 0.0086),
+        ("Lefkara Formation", 0.0736),
+        ("Talus", 0.1830),
+        ("Kannaviou Formation", 0.1859),
+        ("Agia Varvara Formation", 0.0272),
+        ("Pera pedi", 0.0000),
+        ("Melange", 0.1210),
+        ("Mesozoic fine grained clastic", 0.1460),
+        ("Limestones", 0.0370),
+        ("Silica sandstones", 0.1007),
+        ("Lava group", 0.0353),
+        ("Subvolcanic", 0.0014),
+        ("Serpentinite", 0.0478),
+        ("Plutonic", 0.0108),
+        ("Flysch", 0.0),
+    ],
+
+    # Road network -> fr_road
+    "fr_road": [
+        ("< 100", 0.110768893),
+        ("100–200", 0.185879598),
+        ("200–300", 0.227070635),
+        ("300–400", 0.278489831),
+        ("> 400", 0.197791042),
+    ],
+
+    # Plasticity Index -> fr_pi
+    "fr_pi": [
+        ("NoData = 1", 0.0520),
+        ("0–20 = 2", 0.1576),
+        ("20–40 = 3", 0.0858),
+        ("40–60 = 4", 0.2103),
+        ("> 60 = 5", 0.4943),
+    ],
+
+    # Clay content -> fr_clay
+    "fr_clay": [
+        ("NoData = 1", 0.0836),
+        ("0–15 = 2", 0.0254),
+        ("15–30 = 3", 0.1651),
+        ("30–45 = 4", 0.2056),
+        ("> 45 = 5", 0.5204),
+    ],
+
+    # GSI -> fr_gsi
+    "fr_gsi": [
+        ("0–40 = 1", 0.5936),
+        ("40–60 = 2", 0.3096),
+        ("60–90 = 3", 0.0099),
+        ("NoData (9999) = 4", 0.0869),
+    ],
+
+    # Dip direction difference -> fr_dip
+    "fr_dip": [
+        ("0–30 = 1", 0.256515093),
+        ("30–60 = 2", 0.198573182),
+        ("60–90 = 3", 0.249106252),
+        ("> 90 = 4", 0.295805473),
+    ],
+}
+
+
+def fr_value_to_original_class(feature_name: str, fr_value: Any, *, tol: float = 1e-3) -> str:
+    """
+    Map a feature's FR value back to the original-value class label.
+    Uses nearest match with tolerance to handle rounding (e.g. 0.1108 vs 0.110768893).
+    """
+    try:
+        x = float(fr_value)
+    except Exception:
+        return "N/A"
+
+    mapping = FEATURE_FR_CLASSES.get(feature_name)
+    if not mapping:
+        # e.g. rain_topo (raw value) or unknown feature
+        return f"{x:.2f}" if feature_name == "rain_topo" else f"{x:.4f}"
+
+    best_label, best_fr = min(mapping, key=lambda it: abs(it[1] - x))
+    if abs(best_fr - x) <= tol:
+        return best_label
+
+    # If values are slightly off but still closest, return closest (with hint)
+    return f"{best_label} (nearest)"
+
 
 def clamp01(x: float) -> float:
     return max(0.0, min(1.0, float(x)))
@@ -419,20 +600,16 @@ def build_pdf(
     story.append(Paragraph(REPORT_TEXT.replace("\n", " "), styles["Small"]))
     story.append(Spacer(1, 10))
 
-    # Feature table
+    
+    # Feature table (show ORIGINAL CLASS instead of FR value)
     story.append(Paragraph("Input Features (17 variables)", styles["H2"]))
 
     rows = []
     for name in feature_names:
-        v = props.get(name, "")
-        try:
-            fv = float(v)
-            v_str = f"{fv:.2f}" if name == "rain_topo" else f"{fv:.4f}"
-        except Exception:
-            v_str = str(v)
-        rows.append([name, v_str])
+        cls = fr_value_to_original_class(name, props.get(name, ""))
+        rows.append([name, cls])
 
-    table = Table([["Feature", "Value"]] + rows, colWidths=[60 * mm, 110 * mm])
+    table = Table([["Feature", "Class"]] + rows, colWidths=[60 * mm, 110 * mm])
     table.setStyle(
         TableStyle(
             [
@@ -448,6 +625,7 @@ def build_pdf(
         )
     )
     story.append(table)
+
 
     doc.build(story)
     buf.seek(0)
