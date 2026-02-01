@@ -724,9 +724,16 @@ with col_right:
     )
 
     st.subheader("Input features")
-    df = pd.DataFrame([{k: props.get(k) for k in feature_names}]).T
-    df.columns = ["value"]
+    df = pd.DataFrame(
+        {
+            "feature": feature_names,
+            "fr_value": [props.get(k) for k in feature_names],
+            "class": [fr_value_to_original_class(k, props.get(k, "")) for k in feature_names],
+        }
+    ).set_index("feature")
+
     st.dataframe(df, use_container_width=True)
+
 
     st.subheader("PDF report")
     pdf_bytes = build_pdf(
