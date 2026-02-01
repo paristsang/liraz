@@ -19,11 +19,16 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+import os
+from reportlab.platypus import PageBreak
+
 
 
 # ------------------- CONFIG -------------------
 MODEL_PATH = "models/rf_model.pkl"
 FEATURES_PATH = "models/feature_names.json"
+COVER_IMAGE_PATH = "assets/cover.png"
+
 
 st.set_page_config(page_title="Landslide Susceptibility (RF)", layout="wide")
 
@@ -282,6 +287,29 @@ def build_pdf(
     styles.add(ParagraphStyle(name="H2", parent=styles["Heading2"], spaceAfter=6))
 
     story = []
+
+    # ---------------- Cover page (Page 1) ----------------
+    if os.path.exists(COVER_IMAGE_PATH):
+        cover = RLImage(COVER_IMAGE_PATH)
+        # Fit image to the usable page area while preserving aspect ratio
+        avail_w = A4[0] - doc.leftMargin - doc.rightMargin
+        avail_h = A4[1] - doc.topMargin - doc.bottomMargin
+
+        iw, ih = cover.imageWidth, cover.imageHeight
+        scale = min(avail_w / iw, avail_h / ih)
+
+        cover.drawWidth = iw * scale
+        cover.drawHeight = ih * scale
+        cover.hAlign = "CENTER"
+
+        story.append(cover)
+        story.append(PageBreak())
+    else:
+        # If missing, don’t fail—just continue
+        story.append(Paragraph("Cover image missing: assets/cover.png", styles["Small"]))
+        story.append(PageBreak())
+
+    # ---------------- Report pages (Page 2+) ----------------
     story.append(Paragraph("Landslide Susceptibility Report (Single Point)", styles["Title"]))
     story.append(Spacer(1, 6))
     story.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles["Small"]))
@@ -311,7 +339,6 @@ def build_pdf(
         story.append(RLImage(io.BytesIO(map_bytes), width=170 * mm, height=90 * mm))
         story.append(Paragraph("<i>Basemap: Esri World Street Map.</i>", styles["Small"]))
     else:
-        # fallback (still shows point)
         map_bytes = fallback_map_png(lat, lon, w=W, h=H, marker_hex=susc_class["color"])
         story.append(RLImage(io.BytesIO(map_bytes), width=170 * mm, height=90 * mm))
         story.append(Paragraph("<i>Basemap unavailable, showing fallback map.</i>", styles["Small"]))
@@ -359,6 +386,7 @@ def build_pdf(
     doc.build(story)
     buf.seek(0)
     return buf.getvalue()
+
 
 
 # ------------------- STREAMLIT UI -------------------
