@@ -209,6 +209,30 @@ FEATURE_FR_CLASSES: Dict[str, List[Tuple[str, float]]] = {
     ],
 }
 
+# ------------------- HUMAN FRIENDLY FEATURE NAMES (DISPLAY ONLY) -------------------
+FEATURE_LABELS: Dict[str, str] = {
+    "fr_gsi":  "GSI",
+    "fr_TWI":  "TWI",
+    "fr_SPI":  "SPI",
+    "fr_slop": "Slope",
+    "fr_asp":  "Aspect",
+    "fr_river":"Distance to River",
+    "fr_road": "Distance to Road network",
+    "fr_prof": "Profile curvature",
+    "fr_plan": "Plan curvature",
+    "fr_land": "Land use",
+    "fr_gew":  "Lithology",
+    "fr_elev": "Elevation",
+    "fr_dip":  "Dip direction difference",
+    "fr_clay": "Clay content",
+    "fr_pi":   "Plasticity Index",
+    "fr_tect": "Distance to Faults",
+    "rain_topo":"Precipitation",
+}
+
+def feature_display_name(key: str) -> str:
+    return FEATURE_LABELS.get(key, key)
+
 
 def fr_value_to_original_class(feature_name: str, fr_value: Any, *, tol: float = 1e-3) -> str:
     """
@@ -602,12 +626,14 @@ def build_pdf(
 
     
     # Feature table (show ORIGINAL CLASS instead of FR value)
+        # Feature table (show friendly feature name + class)
     story.append(Paragraph("Input Features (17 variables)", styles["H2"]))
 
     rows = []
-    for name in feature_names:
-        cls = fr_value_to_original_class(name, props.get(name, ""))
-        rows.append([name, cls])
+    for key in feature_names:
+        display = feature_display_name(key)
+        cls = fr_value_to_original_class(key, props.get(key, ""))
+        rows.append([display, cls])
 
     table = Table([["Feature", "Class"]] + rows, colWidths=[60 * mm, 110 * mm])
     table.setStyle(
@@ -625,6 +651,7 @@ def build_pdf(
         )
     )
     story.append(table)
+
 
 
     doc.build(story)
@@ -723,16 +750,16 @@ with col_right:
         unsafe_allow_html=True,
     )
 
-    st.subheader("Input features")
     df = pd.DataFrame(
         {
-            "feature": feature_names,
-            "fr_value": [props.get(k) for k in feature_names],
-            "class": [fr_value_to_original_class(k, props.get(k, "")) for k in feature_names],
+            "Feature": [feature_display_name(k) for k in feature_names],
+            "FR value": [props.get(k) for k in feature_names],
+            "Class": [fr_value_to_original_class(k, props.get(k, "")) for k in feature_names],
         }
-    ).set_index("feature")
+    ).set_index("Feature")
 
     st.dataframe(df, use_container_width=True)
+
 
 
     st.subheader("PDF report")
