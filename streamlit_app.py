@@ -1,6 +1,7 @@
 import io
 import json
 import math
+import os
 from datetime import datetime
 from typing import Any, Dict, List, Tuple
 
@@ -18,10 +19,17 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+    Image as RLImage,
+    PageBreak,
+)
 
-import os
-from reportlab.platypus import PageBreak
+
 # ------------------- CONFIG -------------------
 MODEL_PATH = "models/rf_model.pkl"
 FEATURES_PATH = "models/feature_names.json"
@@ -34,7 +42,7 @@ The map depicts the values of the estimated Landslide Susceptibility Index (LSI)
 """.strip()
 
 
-# ------------------- SUSCEPTIBILITY CLASSES (YOUR LEGEND BREAKS) -------------------
+# ------------------- SUSCEPTIBILITY CLASSES (YOUR BREAKS) -------------------
 SUSC_CLASSES = [
     {"name": "Very low susceptibility", "lo": 0.0,      "hi": 0.11796, "color": "#0b3d0b"},
     {"name": "Low susceptibility",      "lo": 0.11797,  "hi": 0.30196, "color": "#1f8a2a"},
@@ -184,14 +192,10 @@ def fetch_esri_export_png(
 
 
 def _choose_nice_scale_length_m(target_m: float) -> float:
-    """
-    Choose a 'nice' scale length near target_m: 1,2,5 * 10^n.
-    """
     if target_m <= 0:
         return 100.0
     exp = math.floor(math.log10(target_m))
     base = target_m / (10 ** exp)
-    # pick closest of 1,2,5,10
     candidates = [1, 2, 5, 10]
     best = min(candidates, key=lambda c: abs(c - base))
     return best * (10 ** exp)
@@ -204,24 +208,15 @@ def _format_scale_label(meters: float) -> str:
 
 
 def draw_north_arrow(draw: ImageDraw.ImageDraw, w: int, h: int) -> None:
-    """
-    Simple north arrow top-right.
-    """
     margin = 18
     cx = w - margin - 18
     cy = margin + 18
-    # arrow shaft
     draw.line([(cx, cy + 18), (cx, cy - 12)], fill=(0, 0, 0, 255), width=3)
-    # arrow head (triangle)
     draw.polygon([(cx, cy - 16), (cx - 8, cy - 2), (cx + 8, cy - 2)], fill=(0, 0, 0, 255))
-    # label N
     draw.text((cx - 5, cy + 22), "N", fill=(0, 0, 0, 255))
 
 
 def draw_scale_bar(draw: ImageDraw.ImageDraw, w: int, h: int, meters_per_pixel: float) -> None:
-    """
-    Scale bar bottom-left with automatic nice length.
-    """
     if meters_per_pixel <= 0:
         return
 
@@ -230,7 +225,6 @@ def draw_scale_bar(draw: ImageDraw.ImageDraw, w: int, h: int, meters_per_pixel: 
     nice_m = _choose_nice_scale_length_m(target_m)
     bar_px = int(round(nice_m / meters_per_pixel))
 
-    # keep within 35% of width
     max_px = int(w * 0.35)
     if bar_px > max_px:
         nice_m = _choose_nice_scale_length_m(meters_per_pixel * max_px)
@@ -241,15 +235,13 @@ def draw_scale_bar(draw: ImageDraw.ImageDraw, w: int, h: int, meters_per_pixel: 
     x0 = margin
     x1 = x0 + bar_px
 
-    # background box
     pad = 6
     label = _format_scale_label(nice_m)
-    # rough text width estimate
     box_w = bar_px + 90
     box_h = 34
-    draw.rectangle((x0 - pad, y - 22, x0 - pad + box_w, y - 22 + box_h), fill=(255, 255, 255, 200), outline=(0, 0, 0, 120))
+    draw.rectangle((x0 - pad, y - 22, x0 - pad + box_w, y - 22 + box_h),
+                   fill=(255, 255, 255, 200), outline=(0, 0, 0, 120))
 
-    # bar line + ticks
     draw.line([(x0, y), (x1, y)], fill=(0, 0, 0, 255), width=4)
     draw.line([(x0, y - 7), (x0, y + 7)], fill=(0, 0, 0, 255), width=2)
     draw.line([(x1, y - 7), (x1, y + 7)], fill=(0, 0, 0, 255), width=2)
@@ -258,15 +250,13 @@ def draw_scale_bar(draw: ImageDraw.ImageDraw, w: int, h: int, meters_per_pixel: 
 
 
 def draw_coordinates_box(draw: ImageDraw.ImageDraw, w: int, h: int, lat: float, lon: float) -> None:
-    """
-    Coordinates box bottom-right.
-    """
     margin = 18
     box_w = 250
     box_h = 40
     x0 = w - margin - box_w
     y0 = h - margin - box_h
-    draw.rectangle((x0, y0, x0 + box_w, y0 + box_h), fill=(255, 255, 255, 200), outline=(0, 0, 0, 120))
+    draw.rectangle((x0, y0, x0 + box_w, y0 + box_h),
+                   fill=(255, 255, 255, 200), outline=(0, 0, 0, 120))
     draw.text((x0 + 10, y0 + 6), f"Lat: {lat:.6f}", fill=(0, 0, 0, 255))
     draw.text((x0 + 10, y0 + 22), f"Lon: {lon:.6f}", fill=(0, 0, 0, 255))
 
@@ -280,28 +270,22 @@ def overlay_point_and_decorations(
     h: int,
     marker_hex: str,
 ) -> bytes:
-    """
-    Draw marker + north arrow + scale bar + coordinates onto the exported basemap PNG.
-    """
     xmin, ymin, xmax, ymax = bbox_3857
     px_m, py_m = _lonlat_to_webmerc(lon, lat)
 
-    # Convert mercator to pixel coords
     x = int(round((px_m - xmin) / (xmax - xmin) * w))
-    y = int(round((ymax - py_m) / (ymax - ymin) * h))  # y origin top
+    y = int(round((ymax - py_m) / (ymax - ymin) * h))
 
     img = PILImage.open(io.BytesIO(png_bytes)).convert("RGBA")
     draw = ImageDraw.Draw(img)
 
-    # marker
     fill = (*hex_to_rgb_tuple(marker_hex), 255)
     ring = (255, 255, 255, 255)
     r = 10
     draw.ellipse((x - r - 3, y - r - 3, x + r + 3, y + r + 3), fill=ring)
     draw.ellipse((x - r, y - r, x + r, y + r), fill=fill)
 
-    # decorations
-    meters_per_pixel = abs((xmax - xmin) / float(w))  # webmerc meters per pixel
+    meters_per_pixel = abs((xmax - xmin) / float(w))
     draw_north_arrow(draw, w, h)
     draw_scale_bar(draw, w, h, meters_per_pixel)
     draw_coordinates_box(draw, w, h, lat, lon)
@@ -319,10 +303,6 @@ def fallback_map_png(
     marker_hex: str = "#e74c3c",
     half_width_m: float = 6000
 ) -> bytes:
-    """
-    Always-works fallback if basemap fetch is blocked:
-    grid + centered marker + north + coords + approximate scale.
-    """
     img = PILImage.new("RGBA", (w, h), (245, 245, 245, 255))
     draw = ImageDraw.Draw(img)
     grid = (210, 210, 210, 255)
@@ -332,18 +312,15 @@ def fallback_map_png(
     for gy in range(0, h, 60):
         draw.line([(0, gy), (w, gy)], fill=grid, width=1)
 
-    # text
     draw.text((14, 14), "Basemap unavailable (fallback map)", fill=(60, 60, 60, 255))
     draw.text((14, 38), f"lat={lat:.6f}, lon={lon:.6f}", fill=(60, 60, 60, 255))
 
-    # center marker (since we don't know real placement without tiles)
     cx, cy = w // 2, h // 2
     r = 10
     fill = (*hex_to_rgb_tuple(marker_hex), 255)
     draw.ellipse((cx - r - 3, cy - r - 3, cx + r + 3, cy + r + 3), fill=(255, 255, 255, 255))
     draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill)
 
-    # decorations
     meters_per_pixel = (2 * half_width_m) / float(w)
     draw_north_arrow(draw, w, h)
     draw_scale_bar(draw, w, h, meters_per_pixel)
@@ -354,7 +331,7 @@ def fallback_map_png(
     return out.getvalue()
 
 
-# ------------------- PDF BUILDER -------------------
+# ------------------- PDF BUILDER (WITH COVER PAGE) -------------------
 def build_pdf(
     lat: float,
     lon: float,
@@ -380,14 +357,14 @@ def build_pdf(
 
     story = []
 
-    # ---------------- Cover page (Page 1) ----------------
+    # --------- Cover page (Page 1) ---------
     if os.path.exists(COVER_IMAGE_PATH):
         cover = RLImage(COVER_IMAGE_PATH)
-        # Fit image to the usable page area while preserving aspect ratio
+
         avail_w = A4[0] - doc.leftMargin - doc.rightMargin
         avail_h = A4[1] - doc.topMargin - doc.bottomMargin
 
-        iw, ih = cover.imageWidth, cover.imageHeight
+        iw, ih = float(cover.imageWidth), float(cover.imageHeight)
         scale = min(avail_w / iw, avail_h / ih)
 
         cover.drawWidth = iw * scale
@@ -397,12 +374,11 @@ def build_pdf(
         story.append(cover)
         story.append(PageBreak())
     else:
-        # If missing, don’t fail—just continue
         story.append(Paragraph("Cover image missing: assets/cover.png", styles["Small"]))
         story.append(PageBreak())
 
-    # ---------------- Report pages (Page 2+) ----------------
-    story.append(Paragraph("Landslide Susceptibility Report)", styles["Title"]))
+    # --------- Report pages (Page 2+) ---------
+    story.append(Paragraph("Landslide Susceptibility Report", styles["Title"]))
     story.append(Spacer(1, 6))
     story.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles["Small"]))
     story.append(Paragraph(f"Location (lat, lon): {lat:.6f}, {lon:.6f}", styles["Small"]))
@@ -413,13 +389,14 @@ def build_pdf(
     story.append(Paragraph(f"<b>Class range:</b> {susc_class['range_label']}", styles["Normal"]))
     story.append(Spacer(1, 10))
 
-    # Map with visible point
+    # Map with point + north + scale + coords
     story.append(Paragraph("Map", styles["H2"]))
     W, H = 900, 420
-    png, bbox = fetch_esri_export_png(lat, lon, w=W, h=H, half_width_m=6000)
+    half_width_m = 6000  # smaller = more zoom-in
+    png, bbox = fetch_esri_export_png(lat, lon, w=W, h=H, half_width_m=half_width_m)
 
     if png and bbox:
-        map_bytes = overlay_point_on_png(
+        map_bytes = overlay_point_and_decorations(
             png_bytes=png,
             lat=lat,
             lon=lon,
@@ -431,7 +408,7 @@ def build_pdf(
         story.append(RLImage(io.BytesIO(map_bytes), width=170 * mm, height=90 * mm))
         story.append(Paragraph("<i>Basemap: Esri World Street Map.</i>", styles["Small"]))
     else:
-        map_bytes = fallback_map_png(lat, lon, w=W, h=H, marker_hex=susc_class["color"])
+        map_bytes = fallback_map_png(lat, lon, w=W, h=H, marker_hex=susc_class["color"], half_width_m=half_width_m)
         story.append(RLImage(io.BytesIO(map_bytes), width=170 * mm, height=90 * mm))
         story.append(Paragraph("<i>Basemap unavailable, showing fallback map.</i>", styles["Small"]))
 
@@ -450,10 +427,7 @@ def build_pdf(
         v = props.get(name, "")
         try:
             fv = float(v)
-            if name == "rain_topo":
-                v_str = f"{fv:.2f}"
-            else:
-                v_str = f"{fv:.4f}"
+            v_str = f"{fv:.2f}" if name == "rain_topo" else f"{fv:.4f}"
         except Exception:
             v_str = str(v)
         rows.append([name, v_str])
@@ -519,7 +493,7 @@ if hasattr(model, "predict_proba") and hasattr(model, "classes_"):
     pos_idx = classes.index(pos_class) if pos_class in classes else (proba.shape[1] - 1)
     p_landslide = float(proba[0, pos_idx])
 else:
-    # if regression output is already LSI in [0,1]
+    # If regression output is already LSI in [0,1]
     try:
         p_landslide = float(pred_class)
     except Exception:
@@ -554,7 +528,7 @@ with col_left:
     st_folium(m, height=520, width=None)
 
 with col_right:
-    st.subheader("Classification Result")
+    st.subheader("Landslide Susceptibility Result")
     st.markdown(
         f"""
         <div style="padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.03);">
