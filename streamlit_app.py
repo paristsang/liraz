@@ -55,7 +55,7 @@ SUSC_CLASSES = [
 # Each entry: (class_label, FR_value)
 FEATURE_FR_CLASSES: Dict[str, List[Tuple[str, float]]] = {
     # Hydrology (your "Hydrology" table) -> likely fr_river
-    "fr_river": [
+    "Distance to River": [
         ("< 100", 0.2842),
         ("100–200", 0.2796),
         ("200–300", 0.2430),
@@ -64,7 +64,7 @@ FEATURE_FR_CLASSES: Dict[str, List[Tuple[str, float]]] = {
     ],
 
     # Tectonic -> fr_tect
-    "fr_tect": [
+    "Distance to Faults": [
         ("< 250", 0.2333),
         ("250–500", 0.2012),
         ("> 750", 0.1991),
@@ -73,7 +73,7 @@ FEATURE_FR_CLASSES: Dict[str, List[Tuple[str, float]]] = {
     ],
 
     # Plan curvature -> fr_plan
-    "fr_plan": [
+    "Plan Curvature": [
         ("< -0.2", 0.4631),
         ("-0.2 to 0.2 (±0.2)", 0.2332),
         ("> 0.2", 0.3037),
