@@ -377,7 +377,30 @@ def build_pdf(
     styles.add(ParagraphStyle(name="H2", parent=styles["Heading2"], spaceAfter=6))
 
     story = []
-    story.append(Paragraph("Landslide Susceptibility Report (Single Point)", styles["Title"]))
+
+    # ---------------- Cover page (Page 1) ----------------
+    if os.path.exists(COVER_IMAGE_PATH):
+        cover = RLImage(COVER_IMAGE_PATH)
+        # Fit image to the usable page area while preserving aspect ratio
+        avail_w = A4[0] - doc.leftMargin - doc.rightMargin
+        avail_h = A4[1] - doc.topMargin - doc.bottomMargin
+
+        iw, ih = cover.imageWidth, cover.imageHeight
+        scale = min(avail_w / iw, avail_h / ih)
+
+        cover.drawWidth = iw * scale
+        cover.drawHeight = ih * scale
+        cover.hAlign = "CENTER"
+
+        story.append(cover)
+        story.append(PageBreak())
+    else:
+        # If missing, don’t fail—just continue
+        story.append(Paragraph("Cover image missing: assets/cover.png", styles["Small"]))
+        story.append(PageBreak())
+
+    # ---------------- Report pages (Page 2+) ----------------
+    story.append(Paragraph("Landslide Susceptibility Report)", styles["Title"]))
     story.append(Spacer(1, 6))
     story.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles["Small"]))
     story.append(Paragraph(f"Location (lat, lon): {lat:.6f}, {lon:.6f}", styles["Small"]))
@@ -388,14 +411,13 @@ def build_pdf(
     story.append(Paragraph(f"<b>Class range:</b> {susc_class['range_label']}", styles["Normal"]))
     story.append(Spacer(1, 10))
 
-    # Map with point + north + scale + coords
+    # Map with visible point
     story.append(Paragraph("Map", styles["H2"]))
     W, H = 900, 420
-    half_width_m = 6000  # controls zoom; smaller = more zoom-in
-    png, bbox = fetch_esri_export_png(lat, lon, w=W, h=H, half_width_m=half_width_m)
+    png, bbox = fetch_esri_export_png(lat, lon, w=W, h=H, half_width_m=6000)
 
     if png and bbox:
-        map_bytes = overlay_point_and_decorations(
+        map_bytes = overlay_point_on_png(
             png_bytes=png,
             lat=lat,
             lon=lon,
@@ -407,7 +429,7 @@ def build_pdf(
         story.append(RLImage(io.BytesIO(map_bytes), width=170 * mm, height=90 * mm))
         story.append(Paragraph("<i>Basemap: Esri World Street Map.</i>", styles["Small"]))
     else:
-        map_bytes = fallback_map_png(lat, lon, w=W, h=H, marker_hex=susc_class["color"], half_width_m=half_width_m)
+        map_bytes = fallback_map_png(lat, lon, w=W, h=H, marker_hex=susc_class["color"])
         story.append(RLImage(io.BytesIO(map_bytes), width=170 * mm, height=90 * mm))
         story.append(Paragraph("<i>Basemap unavailable, showing fallback map.</i>", styles["Small"]))
 
