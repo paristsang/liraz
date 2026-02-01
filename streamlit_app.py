@@ -362,12 +362,12 @@ def build_pdf(
 
 
 # ------------------- STREAMLIT UI -------------------
-st.title("Landslide Susceptibility (Random Forest)")
+st.title("LIRA Project Landslide Susceptibility in Cyprus")
 
 with st.sidebar:
     st.header("Upload")
-    up = st.file_uploader("Upload GeoJSON (FeatureCollection with 1 Point)", type=["geojson", "json"])
-    st.caption("The first point will be used. Properties must include the 17 variables.")
+    up = st.file_uploader("Upload GeoJSON", type=["geojson", "json"])
+    st.caption("Properties must include the 17 variables.")
 
 try:
     model, feature_names = load_assets()
@@ -382,7 +382,7 @@ if not up:
 try:
     fc = parse_geojson(up.getvalue())
     if len(fc["features"]) > 1:
-        st.warning(f"Your file has {len(fc['features'])} features. This demo uses ONLY the first one.")
+        st.warning(f"Your file has {len(fc['features'])} features.")
     lat, lon, props, X = extract_single_point(fc, feature_names)
 except Exception as e:
     st.error(str(e))
