@@ -20,10 +20,12 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage
 
-
+import os
+from reportlab.platypus import PageBreak
 # ------------------- CONFIG -------------------
 MODEL_PATH = "models/rf_model.pkl"
 FEATURES_PATH = "models/feature_names.json"
+COVER_IMAGE_PATH = "assets/cover.png"  # <- add this file to your repo
 
 st.set_page_config(page_title="Landslide Susceptibility (RF)", layout="wide")
 
@@ -479,7 +481,7 @@ def build_pdf(
 
 
 # ------------------- STREAMLIT UI -------------------
-st.title("Landslide Susceptibility (Random Forest)")
+st.title("LIRA Project - Landslide Susceptibility in Cyprus")
 
 with st.sidebar:
     st.header("Upload")
