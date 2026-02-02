@@ -6,14 +6,14 @@
   "fr_asp",
   "fr_river",
   "fr_road",
+  "fr_clay",
   "fr_prof",
   "fr_plan",
+  "fr_pi",
   "fr_land",
   "fr_gew",
   "fr_elev",
+  "rain_topo",
   "fr_dip",
-  "fr_clay",
-  "fr_pi",
-  "fr_tect",
-  "rain_topo"
-]
+  "fr_tect"
+  ]
